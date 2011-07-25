@@ -1,13 +1,13 @@
 name:          prelude-extras
 category:      Polymorphism, Combinators
-version:       0.1.0.1
+version:       0.1.0.2
 license:       BSD3
 cabal-version: >= 1.2
 license-file:  LICENSE
 author:        Edward A. Kmett
 maintainer:    Edward A. Kmett <ekmett@gmail.com>
 stability:     provisional
-homepage:      http://comonad.com/reader/
+homepage:      http://github.com/ekmett/prelude-extras
 copyright:     Copyright (C) 2011 Edward A. Kmett
 synopsis:      Haskell 98 - higher order versions of Prelude classes 
 description:   
@@ -18,7 +18,7 @@ build-type:    Simple
 
 library
   build-depends: 
-    base >= 4 && < 4.4
+    base >= 4 && < 5
 
   extensions: CPP
 
