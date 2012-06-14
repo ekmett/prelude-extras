@@ -1,6 +1,6 @@
 name:          prelude-extras
 category:      Polymorphism, Combinators
-version:       0.1.0.3
+version:       0.2
 license:       BSD3
 cabal-version: >= 1.2
 license-file:  LICENSE
@@ -30,4 +30,3 @@ library
     Prelude.Extras,
     Text.Show.Extras,
     Text.Read.Extras
-
