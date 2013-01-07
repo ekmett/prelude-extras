@@ -28,7 +28,4 @@ library
   extensions: CPP
   hs-source-dirs: src
   ghc-options: -Wall
-  exposed-modules:
-    Prelude.Extras
-    Text.Show.Extras
-    Text.Read.Extras
+  exposed-modules: Prelude.Extras
