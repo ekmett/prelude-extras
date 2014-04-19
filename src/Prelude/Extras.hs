@@ -1,4 +1,7 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ > 702
 #define DEFAULT_SIGNATURES
 {-# LANGUAGE DefaultSignatures #-}
@@ -33,6 +36,8 @@ module Prelude.Extras
   ) where
 
 import Control.Arrow (first)
+import Data.Foldable
+import Data.Traversable
 import Text.Read
 import qualified Text.ParserCombinators.ReadP as P
 import qualified Text.Read.Lex as L
@@ -316,6 +321,7 @@ list readx =
        return (x:xs)
 
 newtype Lift1 f a = Lift1 { lower1 :: f a }
+  deriving (Functor, Foldable, Traversable)
 
 instance Eq1 f   => Eq1 (Lift1 f)   where Lift1 a ==# Lift1 b = a ==# b
 instance Ord1 f  => Ord1 (Lift1 f)  where Lift1 a `compare1` Lift1 b = compare1 a b
@@ -330,6 +336,7 @@ instance (Read1 f, Read a) => Read (Lift1 f a) where
   readsPrec d = map (first Lift1) . readsPrec1 d
 
 newtype Lift2 f a b = Lift2 { lower2 :: f a b }
+  deriving (Functor, Foldable, Traversable)
 
 instance Eq2 f   => Eq2 (Lift2 f)   where Lift2 a ==## Lift2 b = a ==## b
 instance Ord2 f  => Ord2 (Lift2 f)  where Lift2 a `compare2` Lift2 b = compare2 a b
