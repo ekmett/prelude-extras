@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP #-}
-#ifdef __GLASGOW_HASKELL__ && __GLASGOW_HASKELL__ > 702
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ > 702
 #define DEFAULT_SIGNATURES
 {-# LANGUAGE DefaultSignatures #-}
 #endif
