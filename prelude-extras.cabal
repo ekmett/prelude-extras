@@ -10,9 +10,9 @@ stability:     provisional
 homepage:      http://github.com/ekmett/prelude-extras
 bug-reports:   http://github.com/ekmett/prelude-extras/issues
 copyright:     Copyright (C) 2011-2014 Edward A. Kmett
-synopsis:      Haskell 98 - higher order versions of Prelude classes
+synopsis:      Higher order versions of Prelude classes
 description:
-  Haskell 98 - higher order versions of Prelude classes to ease programming with polymorphic recursion and reduce UndecidableInstances
+  Higher order versions of Prelude classes to ease programming with polymorphic recursion and reduce UndecidableInstances
   .
   See <http://flint.cs.yale.edu/trifonov/papers/sqcc.pdf> for further discussion of the approach taken here.
 build-type:    Simple
