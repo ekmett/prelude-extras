@@ -2,208 +2,202 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ > 702
-#define DEFAULT_SIGNATURES
 {-# LANGUAGE DefaultSignatures #-}
-#endif
-
 module Prelude.Extras
   (
   -- * Lifted Prelude classes for kind * -> *
-    Eq1(..), (/=#)
-  , Ord1(..), (<#), (<=#), (>=#), (>#), max1, min1
-  , Show1(..), show1, shows1
-  , Read1(..), read1, reads1
-#ifdef __GLASGOW_HASKELL__
-  , readPrec1            -- :: (Read1 f, Read a) => ReadPrec (f a)
-  , readListPrec1        -- :: (Read1 f, Read a) => ReadPrec [f a]
-  , readList1Default     -- :: (Read1 f, Read a) => ReadS [f a]
-  , readListPrec1Default -- :: (Read1 f, Read a) => ReadPrec [f a]
-#endif
-  , Lift1(..)
+    Eq1(..), eq1, eqWithDefault
+  , Ord1(..), compare1, compareWithDefault
+  , Show1(..), showsPrec1, showsPrecWithDefault, show1, shows1
+  , Read1(..), readsPrec1, read1, reads1, readPrec1
   -- * Lifted Prelude classes for kind * -> * -> *
-  , Eq2(..), (/=##)
-  , Ord2(..), (<##), (<=##), (>=##), (>##), max2, min2
-  , Show2(..), show2, shows2
-  , Read2(..), read2, reads2
-#ifdef __GLASGOW_HASKELL__
-  , readPrec2
-  , readListPrec2
-  , readList2Default
-  , readListPrec2Default
-#endif
-  , Lift2(..)
+  , Eq2(..), eq2, eqWith2Default
+  , Ord2(..), compare2, compareWith2Default
+  , Show2(..), showsPrec2, showsPrecWith2Default, show2, shows2
+  , Read2(..), readsPrec2, read2, reads2, readPrec2
+  -- * Utilities
+  , Equal(..)
+  , Compared(..)
+  , Shown(..)
   ) where
 
 import Control.Arrow (first)
 import Data.Foldable
+import Data.Functor.Contravariant
+import Data.Functor.Contravariant.Generic
 import Data.Traversable
 import Text.Read
 import qualified Text.ParserCombinators.ReadP as P
 import qualified Text.Read.Lex as L
 
-infixr 4 ==#,  /=#,  <#,  <=#,  >=#,  >#
-infixr 4 ==##, /=##, <##, <=##, >=##, >##
+data Equal a = Equal (a -> a -> Bool) a
+
+instance Eq (Equal a) where
+  Equal f a == Equal _ b = f a b
 
 class Eq1 f where
-  (==#) :: Eq a => f a -> f a -> Bool
-#ifdef DEFAULT_SIGNATURES
-  default (==#) :: (Eq (f a), Eq a) => f a -> f a -> Bool
-  (==#) = (==)
-#endif
+  eqWith :: (a -> a -> Bool) -> f a -> f a -> Bool
+  default eqWith :: Deciding Eq f => (a -> a -> Bool) -> f a -> f a -> Bool
+  eqWith f = getEquivalence $ deciding1 (Equivalence (==)) (Equivalence f)
 
-(/=#) :: (Eq1 f, Eq a) => f a -> f a -> Bool
-a /=# b = not (a ==# b)
+eqWithDefault :: (Functor f, Eq (f (Equal a)) => (a -> a -> Bool) -> f a -> f a -> Bool
+eqWithDefault f as bs = Equal f <$> as == Equal f <$> bs
+
+eq1 :: (Eq1, Eq a) => f a -> f a -> Bool
+eq1 = eqWith (==)
 
 instance Eq1 Maybe where
-  Just a  ==# Just b  = a == b
-  Nothing ==# Nothing = True
-  _       ==# _       = False
+  eqWith f (Just a) (Just b) = f a b
+  eqWith _ Nothing Nothing = True
+  eqWith _ _ _ = False
 
 instance Eq a => Eq1 (Either a) where
-  (==#) = (==)
+  eqWith f (Right a) (Right b) = f a b
+  eqWith f (Left a) (Left b) = a == b
+  eqWith _ _ _ = False
 
 instance Eq1 [] where
-  (==#) = (==)
+  eqWith f (a:as) (b:bs) = f a b && eqWith f as bs
+  eqWith _ [] [] = True
+  eqWith _ _ _ = False
 
 class Eq2 f where
-  (==##) :: (Eq a, Eq b) => f a b -> f a b -> Bool
-#ifdef DEFAULT_SIGNATURES
-  default (==##) :: (Eq (f a b), Eq a, Eq b) => f a b -> f a b -> Bool
-  (==##) = (==)
-#endif
+  eqWith2 :: (a -> a -> Bool) -> (b -> b -> Bool) -> f a b -> f a b -> Bool
 
-(/=##) :: (Eq2 f, Eq a, Eq b) => f a b -> f a b -> Bool
-a /=## b = not (a ==## b)
+eqWith2Default :: (Bifunctor f, Eq (f (Equal a) (Equal b))) => (a -> a -> Bool) -> (b -> b -> Bool) -> f a b -> f a b -> Bool
+eqWith2Default f g as bs = bimap (Equal f) (Equal g) as == bimap (Equal f) (Equal g) bs
+
+eq2 :: (Eq2, Eq a, Eq b) => f a b -> f a b -> Bool
+eq2 = eqWith2 (==) (==)
 
 instance Eq2 Either where
-  (==##) = (==)
+  eqWith2 f _ (Left a) (Left b) = f a b
+  eqWith2 _ g (Right a) (Right b) = g a b
+  eqWith2 f g _ _ = False
+
+instance Eq2 (,) where
+  eqWith2 f g (a,b) (c,d) = f a c && g b d
+
+data Compared a = Compared (a -> a -> Ordering) a 
+
+instance Eq (Compared a) where
+  Compared f a `compare` Compared _ b = f a b == EQ
+
+instance Ord (Compared a) where
+  Compared f a `compare` Compared _ b = f a b
 
 class Eq1 f => Ord1 f where
-  compare1 :: Ord a => f a -> f a -> Ordering
-#ifdef DEFAULT_SIGNATURES
-  default compare1 :: (Ord (f a), Ord a) => f a -> f a -> Ordering
-  compare1 = compare
-#endif
+  compareWith :: (a -> a -> Ordering) -> f a -> f a -> Ordering
+  default compareWith :: Deciding1 Ord f => (a -> a -> Ordering) -> f a -> f a -> Ordering
+  compareWith f = getComparison $ deciding1 (Comparison compare) (Comparison f)
 
+compareWithDefault :: (Functor f, Ord (f (Compared a))) => (a -> a -> Ordering) -> f a -> f a -> Ordering
+compareWithDefault f as bs = compare (Compared f <$> as) (Compared f <$> bs)
 
-(<#), (<=#), (>=#), (>#) :: (Ord1 f, Ord a) => f a -> f a -> Bool
-max1, min1 :: (Ord1 f, Ord a) => f a -> f a -> f a
+compare1 :: (Ord1 f, Ord a) => f a -> f a -> ordering
+compare1 = compareWith compare
 
-x <=# y = compare1 x y /= GT
-x <#  y = compare1 x y == LT
-x >=# y = compare1 x y /= LT
-x ># y  = compare1 x y == GT
+instance Ord1 Maybe where
+  compareWith f (Just a) (Just b) = f a b
+  compareWith _ Nothing Nothing   = EQ
+  compareWith _ Just{} Nothing    = LT
+  compareWith _ Nothing Just{}    = GT
 
-max1 x y
-  | x >=# y   = x
-  | otherwise = y
-min1 x y
-  | x <#  y   = x
-  | otherwise = y
+instance Ord a => Ord1 (Either a) where
+  compareWith f (Left a) (Left b) = compare a b
+  compareWith f (Right a) (Right b) = f a b
+  compareWith _ Left{} Right{} = LT
+  compareWith _ Right{} Left{} = GT
 
-instance Ord1 Maybe where compare1 = compare
-instance Ord a => Ord1 (Either a) where compare1 = compare
-instance Ord1 [] where compare1 = compare
-
--- needs Haskell 2011
--- instance Ord1 Complex where compare1 = compare
+instance Ord1 [] where
+  compareWith f (a:as) (b:bs) = f a b `mappend` compareWith f as bs
+  compareWith _ []     []     = EQ
+  compareWith _ (_:_)  []     = GT
+  compareWith _ []     (_:_)  = LT
 
 class Eq2 f => Ord2 f where
-  compare2 :: (Ord a, Ord b) => f a b -> f a b -> Ordering
-#ifdef DEFAULT_SIGNATURES
-  default compare2 :: (Ord (f a b), Ord a, Ord b) => f a b -> f a b -> Ordering
-  compare2 = compare
-#endif
+  compareWith2 :: Ord a => (a -> a -> Ordering) -> (b -> b -> Ordering) -> f a b -> f a b -> Ordering
 
+compareWith2Default :: (Bifunctor f, Ord (f (Compared a) (Compared b))) => (a -> a -> Ordering) -> (b -> b -> Ordering) -> f a b -> f a b -> Ordering
+compareWith2Default f g as bs = bimap (Compared f) (Compared g) as `compare` bimap (Compared f) (Compared g) bs
 
-(<##) :: (Ord2 f, Ord a, Ord b) => f a b -> f a b -> Bool
-x <=## y = compare2 x y /= GT
-(<=##) :: (Ord2 f, Ord a, Ord b) => f a b -> f a b -> Bool
-x <##  y = compare2 x y == LT
-(>=##) :: (Ord2 f, Ord a, Ord b) => f a b -> f a b -> Bool
-x >=## y = compare2 x y /= LT
-(>##) :: (Ord2 f, Ord a, Ord b) => f a b -> f a b -> Bool
-x >## y  = compare2 x y == GT
+compare2 :: (Ord2 f, Ord a, Ord b) => f a b -> f a b -> Ordering
+compare2 = compareWith2 compare compare
 
-max2 :: (Ord2 f, Ord a, Ord b) => f a b -> f a b -> f a b
-max2 x y
-  | x >=## y  = x
-  | otherwise = y
+data Shown a = Shown (Int -> a -> ShowS) ([a] -> ShowS) a
 
-min2 :: (Ord2 f, Ord a, Ord b) => f a b -> f a b -> f a b
-min2 x y
-  | x <## y   = x
-  | otherwise = y
+instance Show (Shown a) where
+  showsPrec d (Shown f _ a) = f d a
 
-instance Ord2 Either where compare2 = compare
+  showsList [] = showString "[]" -- =(
+  showsList xs@(Shown _ _ g) = f [ a | Shown _ a _ <- xs]
 
 class Show1 f where
-  showsPrec1 :: Show a => Int -> f a -> ShowS
-#ifdef DEFAULT_SIGNATURES
-  default showsPrec1 :: (Show (f a), Show a) => Int -> f a -> ShowS
-  showsPrec1 = showsPrec
-#endif
-  showList1 :: (Show a) => [f a] -> ShowS
-  showList1 ls s = showList__ shows1 ls s
+  showsPrecWith :: Show a => (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
+  default showsPrecWith :: (Show2 p, Show b, f ~ p b, Show a) => (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
+  showsPrecWith = showsPrecWith2 showsPrec showList
+
+showsPrecWithDefault :: (Functor f, Show (f Shown)) => (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
+showsPrecWithDefault f g d as = showsPrec d $ fmap (Shown f g) as
+
+showsPrec1 :: (Show1 f, Show a) => Int -> f a -> ShowS
+showsPrec1 = showsPrecWith showsPrec showList
 
 show1 :: (Show1 f, Show a) => f a -> String
 show1 x = shows1 x ""
 
-
 shows1 :: (Show1 f, Show a) => f a -> ShowS
 shows1 = showsPrec1 0
 
-instance Show1 Maybe where showsPrec1 = showsPrec
-instance Show1 [] where showsPrec1 = showsPrec
-instance Show a => Show1 (Either a) where showsPrec1 = showsPrec
-instance Show a => Show1 ((,) a) where showsPrec1 = showsPrec
+instance Show1 Maybe where showsPrecWith = showsPrecWithDefault
+  showsPrecWith _ _ _ Nothing  = showString "Nothing"
+  showsPrecWith f _ d (Just x) = showParen (d > 10) $ showString "Just " .  f 11 x
 
--- instance Show1 Complex
+instance Show1 [] where 
+  showsPrecWith _ g _ [] = g []
+
+instance Show a => Show1 (Either a) where
+  showsPrecWith _ _ d (Left a) = showParen (d > 10) $ showString "Left " . showsPrec 11 x
+  showsPrecWith f _ d (Right b) = showParen (d > 10) $ showString "Right " . f 11 x
+
+instance Show a => Show1 ((,) a) where
+  showsPrecWith f _ (a, b) = show_tuple [shows a, f 0 b]
 
 class Show2 f where
-  showsPrec2 :: (Show a, Show b) => Int -> f a b -> ShowS
-#ifdef DEFAULT_SIGNATURES
-  default showsPrec2 :: (Show (f a b), Show a, Show b) => Int -> f a b -> ShowS
-  showsPrec2 = showsPrec
-#endif
-  showList2  :: (Show a, Show b) => [f a b] -> ShowS
-  showList2 ls s = showList__ shows2 ls s
+  showsPrecWith2 :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> (Int -> b -> ShowS) -> ([b] -> ShowS) -> Int -> f a b -> ShowS
 
-show2      :: (Show2 f, Show a, Show b) => f a b -> String
-show2 x = shows2 x ""
+showsPrecWith2Default :: (Bifunctor f, Show (f (Shown a) (Shown b))) => (Int -> a -> ShowS) -> ShowS [a] -> (Int -> b -> ShowS) -> ShowS [b] -> Int -> f a b -> ShowS
+showsPrecWith2Default f g h i d as = showsPrec d $ bimap (shown f g) (shown h i) as
 
+showsPrec2 :: (Show2 f, Show a, Show b) => Int -> f a b -> ShowS
+showsPrec2 = showsPrecWith showsPrec showsPrec
 
-shows2 :: (Show2 f, Show a, Show b) => f a b -> ShowS
+show2 :: (Show2 f, Show a, Show b) => f a b -> String
+show2 x = shows2 x "" ""
+
+shows2 :: (Show2 f, Show a, Show b) => f a -> ShowS
 shows2 = showsPrec2 0
 
-instance Show2 (,)    where showsPrec2 = showsPrec
-instance Show2 Either where showsPrec2 = showsPrec
+show_tuple :: [ShowS] -> ShowS
+show_tuple ss = showChar '('
+              . foldr1 (\s r -> s . showChar ',' . r) ss
+              . showChar ')'
 
-showList__ :: (a -> ShowS) ->  [a] -> ShowS
-showList__ _     []     s = "[]" ++ s
-showList__ showx (x:xs) s = '[' : showx x (showl xs)
-  where
-    showl []     = ']' : s
-    showl (y:ys) = ',' : showx y (showl ys)
+instance Show2 (,)    where
+  showsPrecWith f _ g _ (a, b) = show_tuple [f 0 a, g 0 b]
+
+instance Show2 Either where
+  showsPrecWith2 f _ _ _ d (Left a) = showParen (d > 10) $ showString "Left " . f 11 a
+  showsPrecWith2 _ _ g _ d (Right b) = showParen (d > 10) $ showString "Right" . g 11 b
 
 class Read1 f where
-  readsPrec1    :: Read a => Int -> ReadS (f a)
-#ifdef DEFAULT_SIGNATURES
-  default readsPrec1 :: (Read (f a), Read a) => Int -> ReadS (f a)
-  readsPrec1 = readsPrec
-#endif
+  readsPrecWith :: Read a => (Int -> ReadS a) -> ReadS [a] -> Int -> ReadS (f a)
 
-  readList1 :: (Read a) => ReadS [f a]
-  readList1  = readPrec_to_S (list readPrec1) 0
+readsPrec1 :: Read a => Int -> ReadS (f a)
+readsPrec1 = readsPrecWith readsPrec readsList
 
-#ifdef __GLASGOW_HASKELL__
-readPrec1     :: (Read1 f, Read a) => ReadPrec (f a)
-readPrec1     = readS_to_Prec readsPrec1
-
-readListPrec1 :: (Read1 f, Read a) => ReadPrec [f a]
-readListPrec1 = readS_to_Prec (\_ -> readList1)
-#endif
+readPrec1 :: (Read1 f, Read a) => ReadPrec (f a)
+readPrec1 = readS_to_Prec readsPrec1
 
 read1  :: (Read1 f, Read a) => String -> f a
 read1 s = either error id (readEither1 s)
@@ -223,17 +217,8 @@ readEither1 s =
        lift P.skipSpaces
        return x
 
-#ifdef __GLASGOW_HASKELL__
-readList1Default     :: (Read1 f, Read a) => ReadS [f a]
-readList1Default = readPrec_to_S readListPrec1 0
-
-readListPrec1Default :: (Read1 f, Read a) => ReadPrec [f a]
-readListPrec1Default = list readPrec1
-#endif
-
 instance Read1 [] where
-  readsPrec1 = readsPrec
-  readList1 = readList
+  readsPrecWith _ g _ = g
 
 instance Read1 Maybe where
   readsPrec1 = readsPrec
@@ -248,21 +233,16 @@ instance Read a => Read1 ((,) a) where
   readList1 = readList
 
 class Read2 f where
-  readsPrec2    :: (Read a, Read b) => Int -> ReadS (f a b)
-#ifdef DEFAULT_SIGNATURES
-  default readsPrec2 :: (Read (f a b), Read a, Read b) => Int -> ReadS (f a b)
-  readsPrec2 = readsPrec
-#endif
-  readList2     :: (Read a, Read b) => ReadS [f a b]
-  readList2     = readPrec_to_S (list readPrec2) 0
+  readsPrecWith2 :: (Int -> ReadS a) -> ReadS [a] -> (Int -> ReadS b) -> ReadS [b] -> Int -> ReadS (f a b)
 
-#ifdef __GLASGOW_HASKELL__
-readPrec2     :: (Read2 f, Read a, Read b) => ReadPrec (f a b)
-readPrec2     = readS_to_Prec readsPrec2
+readsPrec2 :: (Read2 f, Read a, Read b) => Int -> ReadS (f a b)
+readsPrec2 = readsPrecWith2 readsPrec readsList readsPrec readsList
+
+readPrec2 :: (Read2 f, Read a, Read b) => ReadPrec (f a b)
+readPrec2 = readS_to_Prec readsPrec2
 
 readListPrec2 :: (Read2 f, Read a, Read b) => ReadPrec [f a b]
 readListPrec2 = readS_to_Prec (\_ -> readList2)
-#endif
 
 instance Read2 (,) where
   readsPrec2 = readsPrec
@@ -319,39 +299,3 @@ list readx =
     do x  <- reset readx
        xs <- listRest True
        return (x:xs)
-
-newtype Lift1 f a = Lift1 { lower1 :: f a }
-  deriving (Functor, Foldable, Traversable)
-
-instance Eq1 f   => Eq1 (Lift1 f)   where Lift1 a ==# Lift1 b = a ==# b
-instance Ord1 f  => Ord1 (Lift1 f)  where Lift1 a `compare1` Lift1 b = compare1 a b
-instance Show1 f => Show1 (Lift1 f) where showsPrec1 d (Lift1 a) = showsPrec1 d a
-instance Read1 f => Read1 (Lift1 f) where
-  readsPrec1 d = map (first Lift1) . readsPrec1 d
-
-instance (Eq1 f, Eq a) => Eq (Lift1 f a)       where Lift1 a == Lift1 b = a ==# b
-instance (Ord1 f, Ord a) => Ord (Lift1 f a)    where Lift1 a `compare` Lift1 b = compare1 a b
-instance (Show1 f, Show a) => Show (Lift1 f a) where showsPrec d (Lift1 a) = showsPrec1 d a
-instance (Read1 f, Read a) => Read (Lift1 f a) where
-  readsPrec d = map (first Lift1) . readsPrec1 d
-
-newtype Lift2 f a b = Lift2 { lower2 :: f a b }
-  deriving (Functor, Foldable, Traversable)
-
-instance Eq2 f   => Eq2 (Lift2 f)   where Lift2 a ==## Lift2 b = a ==## b
-instance Ord2 f  => Ord2 (Lift2 f)  where Lift2 a `compare2` Lift2 b = compare2 a b
-instance Show2 f => Show2 (Lift2 f) where showsPrec2 d (Lift2 a) = showsPrec2 d a
-instance Read2 f => Read2 (Lift2 f) where
-  readsPrec2 d = map (first Lift2) . readsPrec2 d
-
-instance (Eq2 f, Eq a)     => Eq1 (Lift2 f a)   where Lift2 a ==# Lift2 b = a ==## b
-instance (Ord2 f, Ord a)   => Ord1 (Lift2 f a)  where Lift2 a `compare1` Lift2 b = compare2 a b
-instance (Show2 f, Show a) => Show1 (Lift2 f a) where showsPrec1 d (Lift2 a) = showsPrec2 d a
-instance (Read2 f, Read a) => Read1 (Lift2 f a) where
-  readsPrec1 d = map (first Lift2) . readsPrec2 d
-
-instance (Eq2 f, Eq a, Eq b)       => Eq (Lift2 f a b)   where Lift2 a == Lift2 b = a ==## b
-instance (Ord2 f, Ord a, Ord b)    => Ord (Lift2 f a b)  where Lift2 a `compare` Lift2 b = compare2 a b
-instance (Show2 f, Show a, Show b) => Show (Lift2 f a b) where showsPrec d (Lift2 a) = showsPrec2 d a
-instance (Read2 f, Read a, Read b) => Read (Lift2 f a b) where
-  readsPrec d = map (first Lift2) . readsPrec2 d
