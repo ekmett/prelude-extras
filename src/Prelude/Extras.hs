@@ -7,6 +7,10 @@
 {-# LANGUAGE DefaultSignatures #-}
 #endif
 
+#ifndef MIN_VERSION_base
+#define MIN_VERSION_base(x,y,z) 1
+#endif
+
 module Prelude.Extras
   (
   -- * Lifted Prelude classes for kind * -> *
@@ -36,11 +40,14 @@ module Prelude.Extras
   ) where
 
 import Control.Arrow (first)
-import Data.Foldable
-import Data.Traversable
 import Text.Read
 import qualified Text.ParserCombinators.ReadP as P
 import qualified Text.Read.Lex as L
+
+#if !(MIN_VERSION_base(4,8,0))
+import Data.Foldable
+import Data.Traversable
+#endif
 
 infixr 4 ==#,  /=#,  <#,  <=#,  >=#,  >#
 infixr 4 ==##, /=##, <##, <=##, >=##, >##
