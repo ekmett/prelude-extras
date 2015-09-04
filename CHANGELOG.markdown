@@ -1,3 +1,7 @@
+0.4.0.1
+-------
+* Added instances for the types in base where possible
+
 0.4
 ---
 * Derived `Functor`, `Foldable`, and `Traversable` for `Lift1` and `Lift2`

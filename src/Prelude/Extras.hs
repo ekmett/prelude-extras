@@ -39,14 +39,35 @@ module Prelude.Extras
   , Lift2(..)
   ) where
 
+import Control.Applicative
 import Control.Arrow (first)
+import Control.Concurrent (Chan, MVar)
+import Data.Complex (Complex)
+import Data.Fixed
+import Data.IORef (IORef)
+import Data.Monoid
+import Data.Ratio (Ratio)
+import Foreign.ForeignPtr (ForeignPtr)
+import Foreign.Ptr (Ptr, FunPtr)
+import Foreign.StablePtr (StablePtr)
+import GHC.Conc (TVar)
 import Text.Read
 import qualified Text.ParserCombinators.ReadP as P
 import qualified Text.Read.Lex as L
 
-#if !(MIN_VERSION_base(4,8,0))
+#if MIN_VERSION_base(4,8,0)
+import Data.Functor.Identity
+#else
 import Data.Foldable
 import Data.Traversable
+#endif
+
+#if MIN_VERSION_base(4,7,0)
+import Data.Proxy
+#endif
+
+#if MIN_VERSION_base(4,6,0)
+import Data.Ord (Down(..))
 #endif
 
 infixr 4 ==#,  /=#,  <#,  <=#,  >=#,  >#
@@ -72,6 +93,38 @@ instance Eq a => Eq1 (Either a) where
 
 instance Eq1 [] where
   (==#) = (==)
+
+#if MIN_VERSION_base(4,8,0)
+instance Eq1 Identity where (==#) = (==)
+instance Eq1 f => Eq1 (Alt f) where Alt x ==# Alt y = x ==# y
+#endif
+#if MIN_VERSION_base(4,7,0)
+instance Eq1 Proxy where (==#) = (==)
+instance Eq1 ZipList where (==#) = (==)
+#else
+instance Eq1 ZipList where ZipList xs ==# ZipList ys = xs == ys
+#endif
+#if MIN_VERSION_base(4,6,0)
+instance Eq1 Down where (==#) = (==)
+#endif
+instance Eq1 Dual where (==#) = (==)
+instance Eq1 Sum where (==#) = (==)
+instance Eq1 Product where (==#) = (==)
+instance Eq1 First where (==#) = (==)
+instance Eq1 Last where (==#) = (==)
+instance Eq1 Ptr where (==#) = (==)
+instance Eq1 FunPtr where (==#) = (==)
+instance Eq1 MVar where (==#) = (==)
+instance Eq1 IORef where (==#) = (==)
+instance Eq1 ForeignPtr where (==#) = (==)
+instance Eq1 TVar where (==#) = (==)
+instance Eq1 Fixed where (==#) = (==)
+instance Eq1 StablePtr where (==#) = (==)
+#if MIN_VERSION_base(4,4,0)
+instance Eq1 Ratio where (==#) = (==)
+instance Eq1 Complex where (==#) = (==)
+instance Eq1 Chan where (==#) = (==)
+#endif
 
 class Eq2 f where
   (==##) :: (Eq a, Eq b) => f a b -> f a b -> Bool
@@ -112,6 +165,29 @@ min1 x y
 instance Ord1 Maybe where compare1 = compare
 instance Ord a => Ord1 (Either a) where compare1 = compare
 instance Ord1 [] where compare1 = compare
+#if MIN_VERSION_base(4,8,0)
+instance Ord1 Identity where compare1 = compare
+instance Ord1 f => Ord1 (Alt f) where compare1 (Alt x) (Alt y) = compare1 x y
+#endif
+#if MIN_VERSION_base(4,7,0)
+instance Ord1 Proxy where compare1 = compare
+instance Ord1 ZipList where compare1 = compare
+#else
+instance Ord1 ZipList where compare1 (ZipList xs) (ZipList ys) = compare xs ys
+#endif
+#if MIN_VERSION_base(4,6,0)
+instance Ord1 Down where compare1 = compare
+#endif
+instance Ord1 Dual where compare1 = compare
+instance Ord1 Sum where compare1 = compare
+instance Ord1 Product where compare1 = compare
+instance Ord1 First where compare1 = compare
+instance Ord1 Last where compare1 = compare
+instance Ord1 Ptr where compare1 = compare
+instance Ord1 FunPtr where compare1 = compare
+instance Ord1 ForeignPtr where compare1 = compare
+instance Ord1 Fixed where compare1 = compare
+
 
 -- needs Haskell 2011
 -- instance Ord1 Complex where compare1 = compare
@@ -165,6 +241,38 @@ instance Show1 Maybe where showsPrec1 = showsPrec
 instance Show1 [] where showsPrec1 = showsPrec
 instance Show a => Show1 (Either a) where showsPrec1 = showsPrec
 instance Show a => Show1 ((,) a) where showsPrec1 = showsPrec
+#if MIN_VERSION_base(4,8,0)
+instance Show1 Identity where showsPrec1 = showsPrec
+#endif
+#if MIN_VERSION_base(4,7,0)
+instance Show1 Proxy where showsPrec1 = showsPrec
+instance Show1 ZipList where showsPrec1 = showsPrec
+#else
+instance Show1 ZipList where
+  showsPrec1 p (ZipList xs)
+    = showString "ZipList {getZipList = "
+    . showList xs
+    . showString "}"
+#endif
+#if MIN_VERSION_base(4,8,0)
+instance Show1 Down where showsPrec1 = showsPrec
+instance Show1 f => Show1 (Alt f) where
+  showsPrec1 p (Alt x)
+    = showParen (p > 10)
+    $ showString "Alt "
+    . showsPrec1 11 x
+#endif
+instance Show1 Dual where showsPrec1 = showsPrec
+instance Show1 Sum where showsPrec1 = showsPrec
+instance Show1 Product where showsPrec1 = showsPrec
+instance Show1 First where showsPrec1 = showsPrec
+instance Show1 Last where showsPrec1 = showsPrec
+instance Show1 Ptr where showsPrec1 = showsPrec
+instance Show1 FunPtr where showsPrec1 = showsPrec
+instance Show1 ForeignPtr where showsPrec1 = showsPrec
+#if MIN_VERSION_base(4,4,0)
+instance Show1 Complex where showsPrec1 = showsPrec
+#endif
 
 -- instance Show1 Complex
 
@@ -253,6 +361,80 @@ instance Read a => Read1 (Either a) where
 instance Read a => Read1 ((,) a) where
   readsPrec1 = readsPrec
   readList1 = readList
+
+#if MIN_VERSION_base(4,8,0)
+instance Read1 Identity where
+  readsPrec1 = readsPrec
+  readList1 = readList
+
+instance Read1 f => Read1 (Alt f) where
+  readsPrec1 p
+    = readParen (p > 10) $ \s ->
+      do ("Alt",s1) <- lex s
+         (x,s2) <- readsPrec1 11 s1
+         return (Alt x, s2)
+
+#endif
+
+#if MIN_VERSION_base(4,7,0)
+instance Read1 Proxy where
+  readsPrec1 = readsPrec
+  readList1 = readList
+instance Read1 ZipList where
+  readsPrec1 = readsPrec
+  readList1 = readList
+#else
+instance Read1 ZipList where
+  readList1 = readList1Default
+  readsPrec1 _
+    = readParen False $ \s ->
+      do ("ZipList"   , s1) <- lex s
+         ("{"         , s2) <- lex s1
+         ("getZipList", s3) <- lex s2
+         ("="         , s4) <- lex s3
+         (xs          , s5) <- readList s4
+         ("}"         , s6) <- lex s5
+         return (ZipList xs, s6)
+#endif
+
+#if MIN_VERSION_base(4,7,0)
+instance Read1 Down where
+  readsPrec1 = readsPrec
+  readList1 = readList
+#elif MIN_VERSION_base(4,6,0)
+instance Read1 Down where
+  readList1 = readList1Default
+  readsPrec1 p = readParen (p > 10) $ \s ->
+    do ("Down",s1) <- lex s
+       (x     ,s2) <- readsPrec 11 s1
+       return (Down x, s2)
+#endif
+
+instance Read1 Dual where
+  readsPrec1 = readsPrec
+  readList1 = readList
+
+instance Read1 Sum where
+  readsPrec1 = readsPrec
+  readList1 = readList
+
+instance Read1 Product where
+  readsPrec1 = readsPrec
+  readList1 = readList
+
+instance Read1 First where
+  readsPrec1 = readsPrec
+  readList1 = readList
+
+instance Read1 Last where
+  readsPrec1 = readsPrec
+  readList1 = readList
+
+#if MIN_VERSION_base(4,4,0)
+instance Read1 Complex where
+  readsPrec1 = readsPrec
+  readList1 = readList
+#endif
 
 class Read2 f where
   readsPrec2    :: (Read a, Read b) => Int -> ReadS (f a b)
