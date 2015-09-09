@@ -1,3 +1,7 @@
+0.4.0.2
+-------
+* Mark `Prelude.Extras` as Trustworthy
+
 0.4.0.1
 -------
 * Added instances for the types in base where possible
