@@ -1,12 +1,12 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ > 702
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+#if __GLASGOW_HASKELL__ > 702
 #define DEFAULT_SIGNATURES
 {-# LANGUAGE DefaultSignatures #-}
 #endif
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 701
+#if __GLASGOW_HASKELL__ >= 701
 -- GHC.Conc isn't generally safe, but we're just using TVar
 {-# LANGUAGE Trustworthy #-}
 #endif
@@ -44,13 +44,16 @@ module Prelude.Extras
   ) where
 
 import Control.Applicative
-import Control.Arrow (first)
-import Control.Concurrent (Chan, MVar)
-import Data.Complex (Complex)
 import Data.Fixed
 import Data.IORef (IORef)
 import Data.Monoid
+#if MIN_VERSION_base(4,4,0)
+import Data.Complex (Complex)
 import Data.Ratio (Ratio)
+import Control.Concurrent (Chan, MVar)
+#else
+import Control.Concurrent (MVar)
+#endif
 import Foreign.ForeignPtr (ForeignPtr)
 import Foreign.Ptr (Ptr, FunPtr)
 import Foreign.StablePtr (StablePtr)
@@ -88,9 +91,7 @@ class Eq1 f where
 a /=# b = not (a ==# b)
 
 instance Eq1 Maybe where
-  Just a  ==# Just b  = a == b
-  Nothing ==# Nothing = True
-  _       ==# _       = False
+  (==#) = (==)
 
 instance Eq a => Eq1 (Either a) where
   (==#) = (==)
@@ -100,7 +101,7 @@ instance Eq1 [] where
 
 #if MIN_VERSION_base(4,8,0)
 instance Eq1 Identity where (==#) = (==)
-instance Eq1 f => Eq1 (Alt f) where Alt x ==# Alt y = x ==# y
+deriving instance Eq1 f => Eq1 (Alt f)
 #endif
 #if MIN_VERSION_base(4,7,0)
 instance Eq1 Proxy where (==#) = (==)
@@ -171,7 +172,7 @@ instance Ord a => Ord1 (Either a) where compare1 = compare
 instance Ord1 [] where compare1 = compare
 #if MIN_VERSION_base(4,8,0)
 instance Ord1 Identity where compare1 = compare
-instance Ord1 f => Ord1 (Alt f) where compare1 (Alt x) (Alt y) = compare1 x y
+deriving instance Ord1 f => Ord1 (Alt f)
 #endif
 #if MIN_VERSION_base(4,7,0)
 instance Ord1 Proxy where compare1 = compare
@@ -237,7 +238,6 @@ class Show1 f where
 show1 :: (Show1 f, Show a) => f a -> String
 show1 x = shows1 x ""
 
-
 shows1 :: (Show1 f, Show a) => f a -> ShowS
 shows1 = showsPrec1 0
 
@@ -277,8 +277,6 @@ instance Show1 ForeignPtr where showsPrec1 = showsPrec
 #if MIN_VERSION_base(4,4,0)
 instance Show1 Complex where showsPrec1 = showsPrec
 #endif
-
--- instance Show1 Complex
 
 class Show2 f where
   showsPrec2 :: (Show a, Show b) => Int -> f a b -> ShowS
@@ -491,7 +489,7 @@ readListPrec2Default :: (Read2 f, Read a, Read b) => ReadPrec [f a b]
 readListPrec2Default = list readPrec2
 #endif
 
--- annoying to hav to copy these from Text.Read
+-- annoying to have to copy these from Text.Read
 list :: ReadPrec a -> ReadPrec [a]
 -- ^ @(list p)@ parses a list of things parsed by @p@,
 -- using the usual square-bracket syntax.
@@ -513,38 +511,26 @@ list readx =
        xs <- listRest True
        return (x:xs)
 
+-- If Show1 and Read1 are ever derived by the same mechanism as
+-- Show and Read, rather than GND, that will change their behavior
+-- here.
 newtype Lift1 f a = Lift1 { lower1 :: f a }
-  deriving (Functor, Foldable, Traversable)
+  deriving (Functor, Foldable, Traversable, Eq1, Ord1, Show1, Read1)
 
-instance Eq1 f   => Eq1 (Lift1 f)   where Lift1 a ==# Lift1 b = a ==# b
-instance Ord1 f  => Ord1 (Lift1 f)  where Lift1 a `compare1` Lift1 b = compare1 a b
-instance Show1 f => Show1 (Lift1 f) where showsPrec1 d (Lift1 a) = showsPrec1 d a
-instance Read1 f => Read1 (Lift1 f) where
-  readsPrec1 d = map (first Lift1) . readsPrec1 d
-
-instance (Eq1 f, Eq a) => Eq (Lift1 f a)       where Lift1 a == Lift1 b = a ==# b
-instance (Ord1 f, Ord a) => Ord (Lift1 f a)    where Lift1 a `compare` Lift1 b = compare1 a b
-instance (Show1 f, Show a) => Show (Lift1 f a) where showsPrec d (Lift1 a) = showsPrec1 d a
-instance (Read1 f, Read a) => Read (Lift1 f a) where
-  readsPrec d = map (first Lift1) . readsPrec1 d
+instance (Eq1 f, Eq a) => Eq (Lift1 f a)       where (==) = (==#)
+instance (Ord1 f, Ord a) => Ord (Lift1 f a)    where compare = compare1
+instance (Show1 f, Show a) => Show (Lift1 f a) where showsPrec = showsPrec1
+instance (Read1 f, Read a) => Read (Lift1 f a) where readsPrec = readsPrec1
 
 newtype Lift2 f a b = Lift2 { lower2 :: f a b }
-  deriving (Functor, Foldable, Traversable)
+  deriving (Functor, Foldable, Traversable, Eq2, Ord2, Show2, Read2)
 
-instance Eq2 f   => Eq2 (Lift2 f)   where Lift2 a ==## Lift2 b = a ==## b
-instance Ord2 f  => Ord2 (Lift2 f)  where Lift2 a `compare2` Lift2 b = compare2 a b
-instance Show2 f => Show2 (Lift2 f) where showsPrec2 d (Lift2 a) = showsPrec2 d a
-instance Read2 f => Read2 (Lift2 f) where
-  readsPrec2 d = map (first Lift2) . readsPrec2 d
+instance (Eq2 f, Eq a)     => Eq1 (Lift2 f a)   where (==#) = (==##)
+instance (Ord2 f, Ord a)   => Ord1 (Lift2 f a)  where compare1 = compare2
+instance (Show2 f, Show a) => Show1 (Lift2 f a) where showsPrec1 = showsPrec2
+instance (Read2 f, Read a) => Read1 (Lift2 f a) where readsPrec1 = readsPrec2
 
-instance (Eq2 f, Eq a)     => Eq1 (Lift2 f a)   where Lift2 a ==# Lift2 b = a ==## b
-instance (Ord2 f, Ord a)   => Ord1 (Lift2 f a)  where Lift2 a `compare1` Lift2 b = compare2 a b
-instance (Show2 f, Show a) => Show1 (Lift2 f a) where showsPrec1 d (Lift2 a) = showsPrec2 d a
-instance (Read2 f, Read a) => Read1 (Lift2 f a) where
-  readsPrec1 d = map (first Lift2) . readsPrec2 d
-
-instance (Eq2 f, Eq a, Eq b)       => Eq (Lift2 f a b)   where Lift2 a == Lift2 b = a ==## b
-instance (Ord2 f, Ord a, Ord b)    => Ord (Lift2 f a b)  where Lift2 a `compare` Lift2 b = compare2 a b
-instance (Show2 f, Show a, Show b) => Show (Lift2 f a b) where showsPrec d (Lift2 a) = showsPrec2 d a
-instance (Read2 f, Read a, Read b) => Read (Lift2 f a b) where
-  readsPrec d = map (first Lift2) . readsPrec2 d
+instance (Eq2 f, Eq a, Eq b)       => Eq (Lift2 f a b)   where (==) = (==##)
+instance (Ord2 f, Ord a, Ord b)    => Ord (Lift2 f a b)  where compare = compare2
+instance (Show2 f, Show a, Show b) => Show (Lift2 f a b) where showsPrec = showsPrec2
+instance (Read2 f, Read a, Read b) => Read (Lift2 f a b) where readsPrec = readsPrec2
