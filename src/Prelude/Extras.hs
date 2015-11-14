@@ -112,6 +112,7 @@ instance Eq1 ZipList where ZipList xs ==# ZipList ys = xs == ys
 #if MIN_VERSION_base(4,6,0)
 instance Eq1 Down where (==#) = (==)
 #endif
+instance Eq a => Eq1 (Const a) where (==#) = (==)
 instance Eq1 Dual where (==#) = (==)
 instance Eq1 Sum where (==#) = (==)
 instance Eq1 Product where (==#) = (==)
@@ -183,6 +184,7 @@ instance Ord1 ZipList where compare1 (ZipList xs) (ZipList ys) = compare xs ys
 #if MIN_VERSION_base(4,6,0)
 instance Ord1 Down where compare1 = compare
 #endif
+instance Ord a => Ord1 (Const a) where compare1 = compare
 instance Ord1 Dual where compare1 = compare
 instance Ord1 Sum where compare1 = compare
 instance Ord1 Product where compare1 = compare
@@ -266,6 +268,7 @@ instance Show1 f => Show1 (Alt f) where
     $ showString "Alt "
     . showsPrec1 11 x
 #endif
+instance Show a => Show1 (Const a) where showsPrec1 = showsPrec
 instance Show1 Dual where showsPrec1 = showsPrec
 instance Show1 Sum where showsPrec1 = showsPrec
 instance Show1 Product where showsPrec1 = showsPrec
@@ -411,6 +414,10 @@ instance Read1 Down where
        (x     ,s2) <- readsPrec 11 s1
        return (Down x, s2)
 #endif
+
+instance Read a => Read1 (Const a) where
+  readsPrec1 = readsPrec
+  readList1 = readList
 
 instance Read1 Dual where
   readsPrec1 = readsPrec

@@ -1,3 +1,7 @@
+0.4.0.3
+-------
+* Add instances for `Const`
+
 0.4.0.2
 -------
 * Mark `Prelude.Extras` as Trustworthy
