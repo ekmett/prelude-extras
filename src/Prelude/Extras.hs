@@ -112,7 +112,12 @@ instance Eq1 ZipList where ZipList xs ==# ZipList ys = xs == ys
 #if MIN_VERSION_base(4,6,0)
 instance Eq1 Down where (==#) = (==)
 #endif
+#if MIN_VERSION_base(4,8,0)
 instance Eq a => Eq1 (Const a) where (==#) = (==)
+#else
+instance Eq a => Eq1 (Const a) where
+  Const a ==# Const b = a == b
+#endif
 instance Eq1 Dual where (==#) = (==)
 instance Eq1 Sum where (==#) = (==)
 instance Eq1 Product where (==#) = (==)
@@ -184,7 +189,12 @@ instance Ord1 ZipList where compare1 (ZipList xs) (ZipList ys) = compare xs ys
 #if MIN_VERSION_base(4,6,0)
 instance Ord1 Down where compare1 = compare
 #endif
+#if MIN_VERSION_base(4,8,0)
 instance Ord a => Ord1 (Const a) where compare1 = compare
+#else
+instance Ord a => Ord1 (Const a) where
+  compare1 (Const x) (Const y) = compare x y
+#endif
 instance Ord1 Dual where compare1 = compare
 instance Ord1 Sum where compare1 = compare
 instance Ord1 Product where compare1 = compare
@@ -268,7 +278,15 @@ instance Show1 f => Show1 (Alt f) where
     $ showString "Alt "
     . showsPrec1 11 x
 #endif
+#if MIN_VERSION_base(4,8,0)
 instance Show a => Show1 (Const a) where showsPrec1 = showsPrec
+#else
+instance Show a => Show1 (Const a) where
+  showsPrec1 p (Const x)
+     = showParen (p > 10)
+     $ showString "Const "
+     . showsPrec 11 x
+#endif
 instance Show1 Dual where showsPrec1 = showsPrec
 instance Show1 Sum where showsPrec1 = showsPrec
 instance Show1 Product where showsPrec1 = showsPrec
@@ -390,7 +408,6 @@ instance Read1 ZipList where
   readList1 = readList
 #else
 instance Read1 ZipList where
-  readList1 = readList1Default
   readsPrec1 _
     = readParen False $ \s ->
       do ("ZipList"   , s1) <- lex s
@@ -408,16 +425,23 @@ instance Read1 Down where
   readList1 = readList
 #elif MIN_VERSION_base(4,6,0)
 instance Read1 Down where
-  readList1 = readList1Default
   readsPrec1 p = readParen (p > 10) $ \s ->
     do ("Down",s1) <- lex s
        (x     ,s2) <- readsPrec 11 s1
        return (Down x, s2)
 #endif
 
+#if MIN_VERSION_base(4,8,0)
 instance Read a => Read1 (Const a) where
   readsPrec1 = readsPrec
   readList1 = readList
+#else
+instance Read a => Read1 (Const a) where
+  readsPrec1 p = readParen (p > 10) $ \s ->
+    do ("Const",s1) <- lex s
+       (x      ,s2) <- readsPrec 11 s1
+       return (Const x, s2)
+#endif
 
 instance Read1 Dual where
   readsPrec1 = readsPrec
