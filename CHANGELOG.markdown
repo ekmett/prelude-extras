@@ -1,6 +1,7 @@
 0.4.0.3
 -------
 * Add instances for `Const`
+* Add instances for tuples up to 9
 
 0.4.0.2
 -------

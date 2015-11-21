@@ -137,6 +137,16 @@ instance Eq1 Complex where (==#) = (==)
 instance Eq1 Chan where (==#) = (==)
 #endif
 
+instance Eq a                                                   => Eq1 ((,)         a)                 where (==#) = (==)
+instance (Eq a, Eq b)                                           => Eq1 ((,,)        a b)               where (==#) = (==)
+instance (Eq a, Eq b, Eq c)                                     => Eq1 ((,,,)       a b c)             where (==#) = (==)
+instance (Eq a, Eq b, Eq c, Eq d)                               => Eq1 ((,,,,)      a b c d)           where (==#) = (==)
+instance (Eq a, Eq b, Eq c, Eq d, Eq e)                         => Eq1 ((,,,,,)     a b c d e)         where (==#) = (==)
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f)                   => Eq1 ((,,,,,,)    a b c d e f)       where (==#) = (==)
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g)             => Eq1 ((,,,,,,,)   a b c d e f g)     where (==#) = (==)
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h)       => Eq1 ((,,,,,,,,)  a b c d e f g h)   where (==#) = (==)
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => Eq1 ((,,,,,,,,,) a b c d e f g h i) where (==#) = (==)
+
 class Eq2 f where
   (==##) :: (Eq a, Eq b) => f a b -> f a b -> Bool
 #ifdef DEFAULT_SIGNATURES
@@ -149,6 +159,16 @@ a /=## b = not (a ==## b)
 
 instance Eq2 Either where
   (==##) = (==)
+
+instance                                                           Eq2 (,)                              where (==##) = (==)
+instance Eq a                                                   => Eq2 ((,,)         a)                 where (==##) = (==)
+instance (Eq a, Eq b)                                           => Eq2 ((,,,)        a b)               where (==##) = (==)
+instance (Eq a, Eq b, Eq c)                                     => Eq2 ((,,,,)       a b c)             where (==##) = (==)
+instance (Eq a, Eq b, Eq c, Eq d)                               => Eq2 ((,,,,,)      a b c d)           where (==##) = (==)
+instance (Eq a, Eq b, Eq c, Eq d, Eq e)                         => Eq2 ((,,,,,,)     a b c d e)         where (==##) = (==)
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f)                   => Eq2 ((,,,,,,,)    a b c d e f)       where (==##) = (==)
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g)             => Eq2 ((,,,,,,,,)   a b c d e f g)     where (==##) = (==)
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h)       => Eq2 ((,,,,,,,,,)  a b c d e f g h)   where (==##) = (==)
 
 class Eq1 f => Ord1 f where
   compare1 :: Ord a => f a -> f a -> Ordering
@@ -205,6 +225,16 @@ instance Ord1 FunPtr where compare1 = compare
 instance Ord1 ForeignPtr where compare1 = compare
 instance Ord1 Fixed where compare1 = compare
 
+instance Ord a                                                           => Ord1 ((,)         a)                 where compare1 = compare
+instance (Ord a, Ord b)                                                  => Ord1 ((,,)        a b)               where compare1 = compare
+instance (Ord a, Ord b, Ord c)                                           => Ord1 ((,,,)       a b c)             where compare1 = compare
+instance (Ord a, Ord b, Ord c, Ord d)                                    => Ord1 ((,,,,)      a b c d)           where compare1 = compare
+instance (Ord a, Ord b, Ord c, Ord d, Ord e)                             => Ord1 ((,,,,,)     a b c d e)         where compare1 = compare
+instance (Ord a, Ord b, Ord c, Ord d, Ord e, Ord f)                      => Ord1 ((,,,,,,)    a b c d e f)       where compare1 = compare
+instance (Ord a, Ord b, Ord c, Ord d, Ord e, Ord f, Ord g)               => Ord1 ((,,,,,,,)   a b c d e f g)     where compare1 = compare
+instance (Ord a, Ord b, Ord c, Ord d, Ord e, Ord f, Ord g, Ord h)        => Ord1 ((,,,,,,,,)  a b c d e f g h)   where compare1 = compare
+instance (Ord a, Ord b, Ord c, Ord d, Ord e, Ord f, Ord g, Ord h, Ord i) => Ord1 ((,,,,,,,,,) a b c d e f g h i) where compare1 = compare
+
 
 -- needs Haskell 2011
 -- instance Ord1 Complex where compare1 = compare
@@ -238,6 +268,16 @@ min2 x y
 
 instance Ord2 Either where compare2 = compare
 
+instance                                                                    Ord2 (,)                              where compare2 = compare
+instance Ord a                                                           => Ord2 ((,,)         a)                 where compare2 = compare
+instance (Ord a, Ord b)                                                  => Ord2 ((,,,)        a b)               where compare2 = compare
+instance (Ord a, Ord b, Ord c)                                           => Ord2 ((,,,,)       a b c)             where compare2 = compare
+instance (Ord a, Ord b, Ord c, Ord d)                                    => Ord2 ((,,,,,)      a b c d)           where compare2 = compare
+instance (Ord a, Ord b, Ord c, Ord d, Ord e)                             => Ord2 ((,,,,,,)     a b c d e)         where compare2 = compare
+instance (Ord a, Ord b, Ord c, Ord d, Ord e, Ord f)                      => Ord2 ((,,,,,,,)    a b c d e f)       where compare2 = compare
+instance (Ord a, Ord b, Ord c, Ord d, Ord e, Ord f, Ord g)               => Ord2 ((,,,,,,,,)   a b c d e f g)     where compare2 = compare
+instance (Ord a, Ord b, Ord c, Ord d, Ord e, Ord f, Ord g, Ord h)        => Ord2 ((,,,,,,,,,)  a b c d e f g h)   where compare2 = compare
+
 class Show1 f where
   showsPrec1 :: Show a => Int -> f a -> ShowS
 #ifdef DEFAULT_SIGNATURES
@@ -256,7 +296,6 @@ shows1 = showsPrec1 0
 instance Show1 Maybe where showsPrec1 = showsPrec
 instance Show1 [] where showsPrec1 = showsPrec
 instance Show a => Show1 (Either a) where showsPrec1 = showsPrec
-instance Show a => Show1 ((,) a) where showsPrec1 = showsPrec
 #if MIN_VERSION_base(4,8,0)
 instance Show1 Identity where showsPrec1 = showsPrec
 #endif
@@ -299,6 +338,16 @@ instance Show1 ForeignPtr where showsPrec1 = showsPrec
 instance Show1 Complex where showsPrec1 = showsPrec
 #endif
 
+instance Show a                                                                   => Show1 ((,)         a)                 where showsPrec1 = showsPrec
+instance (Show a, Show b)                                                         => Show1 ((,,)        a b)               where showsPrec1 = showsPrec
+instance (Show a, Show b, Show c)                                                 => Show1 ((,,,)       a b c)             where showsPrec1 = showsPrec
+instance (Show a, Show b, Show c, Show d)                                         => Show1 ((,,,,)      a b c d)           where showsPrec1 = showsPrec
+instance (Show a, Show b, Show c, Show d, Show e)                                 => Show1 ((,,,,,)     a b c d e)         where showsPrec1 = showsPrec
+instance (Show a, Show b, Show c, Show d, Show e, Show f)                         => Show1 ((,,,,,,)    a b c d e f)       where showsPrec1 = showsPrec
+instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g)                 => Show1 ((,,,,,,,)   a b c d e f g)     where showsPrec1 = showsPrec
+instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h)         => Show1 ((,,,,,,,,)  a b c d e f g h)   where showsPrec1 = showsPrec
+instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h, Show i) => Show1 ((,,,,,,,,,) a b c d e f g h i) where showsPrec1 = showsPrec
+
 class Show2 f where
   showsPrec2 :: (Show a, Show b) => Int -> f a b -> ShowS
 #ifdef DEFAULT_SIGNATURES
@@ -315,8 +364,17 @@ show2 x = shows2 x ""
 shows2 :: (Show2 f, Show a, Show b) => f a b -> ShowS
 shows2 = showsPrec2 0
 
-instance Show2 (,)    where showsPrec2 = showsPrec
 instance Show2 Either where showsPrec2 = showsPrec
+
+instance                                                                             Show2 (,)                              where showsPrec2 = showsPrec
+instance Show a                                                                   => Show2 ((,,)         a)                 where showsPrec2 = showsPrec
+instance (Show a, Show b)                                                         => Show2 ((,,,)        a b)               where showsPrec2 = showsPrec
+instance (Show a, Show b, Show c)                                                 => Show2 ((,,,,)       a b c)             where showsPrec2 = showsPrec
+instance (Show a, Show b, Show c, Show d)                                         => Show2 ((,,,,,)      a b c d)           where showsPrec2 = showsPrec
+instance (Show a, Show b, Show c, Show d, Show e)                                 => Show2 ((,,,,,,)     a b c d e)         where showsPrec2 = showsPrec
+instance (Show a, Show b, Show c, Show d, Show e, Show f)                         => Show2 ((,,,,,,,)    a b c d e f)       where showsPrec2 = showsPrec
+instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g)                 => Show2 ((,,,,,,,,)   a b c d e f g)     where showsPrec2 = showsPrec
+instance (Show a, Show b, Show c, Show d, Show e, Show f, Show g, Show h)         => Show2 ((,,,,,,,,,)  a b c d e f g h)   where showsPrec2 = showsPrec
 
 showList__ :: (a -> ShowS) ->  [a] -> ShowS
 showList__ _     []     s = "[]" ++ s
@@ -378,10 +436,6 @@ instance Read1 Maybe where
   readList1 = readList
 
 instance Read a => Read1 (Either a) where
-  readsPrec1 = readsPrec
-  readList1 = readList
-
-instance Read a => Read1 ((,) a) where
   readsPrec1 = readsPrec
   readList1 = readList
 
@@ -469,6 +523,16 @@ instance Read1 Complex where
   readList1 = readList
 #endif
 
+instance Read a                                                                   => Read1 ((,)         a)                 where readsPrec1 = readsPrec; readList1 = readList
+instance (Read a, Read b)                                                         => Read1 ((,,)        a b)               where readsPrec1 = readsPrec; readList1 = readList
+instance (Read a, Read b, Read c)                                                 => Read1 ((,,,)       a b c)             where readsPrec1 = readsPrec; readList1 = readList
+instance (Read a, Read b, Read c, Read d)                                         => Read1 ((,,,,)      a b c d)           where readsPrec1 = readsPrec; readList1 = readList
+instance (Read a, Read b, Read c, Read d, Read e)                                 => Read1 ((,,,,,)     a b c d e)         where readsPrec1 = readsPrec; readList1 = readList
+instance (Read a, Read b, Read c, Read d, Read e, Read f)                         => Read1 ((,,,,,,)    a b c d e f)       where readsPrec1 = readsPrec; readList1 = readList
+instance (Read a, Read b, Read c, Read d, Read e, Read f, Read g)                 => Read1 ((,,,,,,,)   a b c d e f g)     where readsPrec1 = readsPrec; readList1 = readList
+instance (Read a, Read b, Read c, Read d, Read e, Read f, Read g, Read h)         => Read1 ((,,,,,,,,)  a b c d e f g h)   where readsPrec1 = readsPrec; readList1 = readList
+instance (Read a, Read b, Read c, Read d, Read e, Read f, Read g, Read h, Read i) => Read1 ((,,,,,,,,,) a b c d e f g h i) where readsPrec1 = readsPrec; readList1 = readList
+
 class Read2 f where
   readsPrec2    :: (Read a, Read b) => Int -> ReadS (f a b)
 #ifdef DEFAULT_SIGNATURES
@@ -486,13 +550,19 @@ readListPrec2 :: (Read2 f, Read a, Read b) => ReadPrec [f a b]
 readListPrec2 = readS_to_Prec (\_ -> readList2)
 #endif
 
-instance Read2 (,) where
-  readsPrec2 = readsPrec
-  readList2 = readList
-
 instance Read2 Either where
   readsPrec2 = readsPrec
   readList2 = readList
+
+instance                                                                             Read2 (,)                              where readsPrec2 = readsPrec; readList2 = readList
+instance Read a                                                                   => Read2 ((,,)         a)                 where readsPrec2 = readsPrec; readList2 = readList
+instance (Read a, Read b)                                                         => Read2 ((,,,)        a b)               where readsPrec2 = readsPrec; readList2 = readList
+instance (Read a, Read b, Read c)                                                 => Read2 ((,,,,)       a b c)             where readsPrec2 = readsPrec; readList2 = readList
+instance (Read a, Read b, Read c, Read d)                                         => Read2 ((,,,,,)      a b c d)           where readsPrec2 = readsPrec; readList2 = readList
+instance (Read a, Read b, Read c, Read d, Read e)                                 => Read2 ((,,,,,,)     a b c d e)         where readsPrec2 = readsPrec; readList2 = readList
+instance (Read a, Read b, Read c, Read d, Read e, Read f)                         => Read2 ((,,,,,,,)    a b c d e f)       where readsPrec2 = readsPrec; readList2 = readList
+instance (Read a, Read b, Read c, Read d, Read e, Read f, Read g)                 => Read2 ((,,,,,,,,)   a b c d e f g)     where readsPrec2 = readsPrec; readList2 = readList
+instance (Read a, Read b, Read c, Read d, Read e, Read f, Read g, Read h)         => Read2 ((,,,,,,,,,)  a b c d e f g h)   where readsPrec2 = readsPrec; readList2 = readList
 
 read2  :: (Read2 f, Read a, Read b) => String -> f a b
 read2 s = either error id (readEither2 s)
