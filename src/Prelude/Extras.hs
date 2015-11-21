@@ -158,7 +158,12 @@ class Eq2 f where
 a /=## b = not (a ==## b)
 
 instance Eq2 Either where (==##) = (==)
+
+#if MIN_VERSION_base(4,8,0)
 instance Eq2 Const where (==##) = (==)
+#else
+instance Eq2 Const where Const x ==## Const y = x == y
+#endif
 
 instance                                                           Eq2 (,)                              where (==##) = (==)
 instance Eq a                                                   => Eq2 ((,,)         a)                 where (==##) = (==)
@@ -267,7 +272,11 @@ min2 x y
   | otherwise = y
 
 instance Ord2 Either where compare2 = compare
+#if MIN_VERSION_base(4,8,0)
 instance Ord2 Const where compare2 = compare
+#else
+instance Ord2 Const where Const x `compare2` Const y = compare x y
+#endif
 
 instance                                                                    Ord2 (,)                              where compare2 = compare
 instance Ord a                                                           => Ord2 ((,,)         a)                 where compare2 = compare
@@ -366,7 +375,11 @@ shows2 :: (Show2 f, Show a, Show b) => f a b -> ShowS
 shows2 = showsPrec2 0
 
 instance Show2 Either where showsPrec2 = showsPrec
+#if MIN_VERSION_base(4,8,0)
 instance Show2 Const where showsPrec2 = showsPrec
+#else
+instance Show2 Const where showsPrec2 = showsPrec1
+#endif
 
 instance                                                                             Show2 (,)                              where showsPrec2 = showsPrec
 instance Show a                                                                   => Show2 ((,,)         a)                 where showsPrec2 = showsPrec
@@ -556,9 +569,15 @@ instance Read2 Either where
   readsPrec2 = readsPrec
   readList2 = readList
 
+#if MIN_VERSION_base(4,8,0)
 instance Read2 Const where
   readsPrec2 = readsPrec
   readList2 = readList
+#else
+instance Read2 Const where
+  readsPrec2 = readsPrec1
+  readList2 = readList1
+#endif
 
 instance                                                                             Read2 (,)                              where readsPrec2 = readsPrec; readList2 = readList
 instance Read a                                                                   => Read2 ((,,)         a)                 where readsPrec2 = readsPrec; readList2 = readList
