@@ -157,8 +157,8 @@ class Eq2 f where
 (/=##) :: (Eq2 f, Eq a, Eq b) => f a b -> f a b -> Bool
 a /=## b = not (a ==## b)
 
-instance Eq2 Either where
-  (==##) = (==)
+instance Eq2 Either where (==##) = (==)
+instance Eq2 Const where (==##) = (==)
 
 instance                                                           Eq2 (,)                              where (==##) = (==)
 instance Eq a                                                   => Eq2 ((,,)         a)                 where (==##) = (==)
@@ -267,6 +267,7 @@ min2 x y
   | otherwise = y
 
 instance Ord2 Either where compare2 = compare
+instance Ord2 Const where compare2 = compare
 
 instance                                                                    Ord2 (,)                              where compare2 = compare
 instance Ord a                                                           => Ord2 ((,,)         a)                 where compare2 = compare
@@ -365,6 +366,7 @@ shows2 :: (Show2 f, Show a, Show b) => f a b -> ShowS
 shows2 = showsPrec2 0
 
 instance Show2 Either where showsPrec2 = showsPrec
+instance Show2 Const where showsPrec2 = showsPrec
 
 instance                                                                             Show2 (,)                              where showsPrec2 = showsPrec
 instance Show a                                                                   => Show2 ((,,)         a)                 where showsPrec2 = showsPrec
@@ -551,6 +553,10 @@ readListPrec2 = readS_to_Prec (\_ -> readList2)
 #endif
 
 instance Read2 Either where
+  readsPrec2 = readsPrec
+  readList2 = readList
+
+instance Read2 Const where
   readsPrec2 = readsPrec
   readList2 = readList
 
