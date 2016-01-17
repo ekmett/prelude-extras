@@ -36,8 +36,10 @@ module Prelude.Extras
   ) where
 
 import Control.Arrow (first)
+#if __GLASGOW_HASKELL__ < 710
 import Data.Foldable
 import Data.Traversable
+#endif
 import Text.Read
 import qualified Text.ParserCombinators.ReadP as P
 import qualified Text.Read.Lex as L
@@ -48,7 +50,7 @@ infixr 4 ==##, /=##, <##, <=##, >=##, >##
 class Eq1 f where
   (==#) :: Eq a => f a -> f a -> Bool
 #ifdef DEFAULT_SIGNATURES
-  default (==#) :: (Eq (f a), Eq a) => f a -> f a -> Bool
+  default (==#) :: Eq (f a) => f a -> f a -> Bool
   (==#) = (==)
 #endif
 
@@ -69,7 +71,7 @@ instance Eq1 [] where
 class Eq2 f where
   (==##) :: (Eq a, Eq b) => f a b -> f a b -> Bool
 #ifdef DEFAULT_SIGNATURES
-  default (==##) :: (Eq (f a b), Eq a, Eq b) => f a b -> f a b -> Bool
+  default (==##) :: Eq (f a b) => f a b -> f a b -> Bool
   (==##) = (==)
 #endif
 
@@ -82,7 +84,7 @@ instance Eq2 Either where
 class Eq1 f => Ord1 f where
   compare1 :: Ord a => f a -> f a -> Ordering
 #ifdef DEFAULT_SIGNATURES
-  default compare1 :: (Ord (f a), Ord a) => f a -> f a -> Ordering
+  default compare1 :: Ord (f a) => f a -> f a -> Ordering
   compare1 = compare
 #endif
 
@@ -112,7 +114,7 @@ instance Ord1 [] where compare1 = compare
 class Eq2 f => Ord2 f where
   compare2 :: (Ord a, Ord b) => f a b -> f a b -> Ordering
 #ifdef DEFAULT_SIGNATURES
-  default compare2 :: (Ord (f a b), Ord a, Ord b) => f a b -> f a b -> Ordering
+  default compare2 :: Ord (f a b) => f a b -> f a b -> Ordering
   compare2 = compare
 #endif
 
@@ -141,7 +143,7 @@ instance Ord2 Either where compare2 = compare
 class Show1 f where
   showsPrec1 :: Show a => Int -> f a -> ShowS
 #ifdef DEFAULT_SIGNATURES
-  default showsPrec1 :: (Show (f a), Show a) => Int -> f a -> ShowS
+  default showsPrec1 :: Show (f a) => Int -> f a -> ShowS
   showsPrec1 = showsPrec
 #endif
   showList1 :: (Show a) => [f a] -> ShowS
@@ -164,7 +166,7 @@ instance Show a => Show1 ((,) a) where showsPrec1 = showsPrec
 class Show2 f where
   showsPrec2 :: (Show a, Show b) => Int -> f a b -> ShowS
 #ifdef DEFAULT_SIGNATURES
-  default showsPrec2 :: (Show (f a b), Show a, Show b) => Int -> f a b -> ShowS
+  default showsPrec2 :: Show (f a b) => Int -> f a b -> ShowS
   showsPrec2 = showsPrec
 #endif
   showList2  :: (Show a, Show b) => [f a b] -> ShowS
@@ -190,7 +192,7 @@ showList__ showx (x:xs) s = '[' : showx x (showl xs)
 class Read1 f where
   readsPrec1    :: Read a => Int -> ReadS (f a)
 #ifdef DEFAULT_SIGNATURES
-  default readsPrec1 :: (Read (f a), Read a) => Int -> ReadS (f a)
+  default readsPrec1 :: Read (f a) => Int -> ReadS (f a)
   readsPrec1 = readsPrec
 #endif
 
@@ -250,7 +252,7 @@ instance Read a => Read1 ((,) a) where
 class Read2 f where
   readsPrec2    :: (Read a, Read b) => Int -> ReadS (f a b)
 #ifdef DEFAULT_SIGNATURES
-  default readsPrec2 :: (Read (f a b), Read a, Read b) => Int -> ReadS (f a b)
+  default readsPrec2 :: Read (f a b) => Int -> ReadS (f a b)
   readsPrec2 = readsPrec
 #endif
   readList2     :: (Read a, Read b) => ReadS [f a b]
