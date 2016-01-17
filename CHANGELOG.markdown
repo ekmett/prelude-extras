@@ -1,3 +1,16 @@
+0.4.0.3
+-------
+* Add instances for `Const`
+* Add instances for tuples up to 9
+
+0.4.0.2
+-------
+* Mark `Prelude.Extras` as Trustworthy
+
+0.4.0.1
+-------
+* Added instances for the types in base where possible
+
 0.4
 ---
 * Derived `Functor`, `Foldable`, and `Traversable` for `Lift1` and `Lift2`
