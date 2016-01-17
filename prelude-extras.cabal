@@ -9,7 +9,7 @@ maintainer:    Edward A. Kmett <ekmett@gmail.com>
 stability:     provisional
 homepage:      http://github.com/ekmett/prelude-extras
 bug-reports:   http://github.com/ekmett/prelude-extras/issues
-copyright:     Copyright (C) 2011-2014 Edward A. Kmett
+copyright:     Copyright (C) 2011-2016 Edward A. Kmett
 synopsis:      Higher order versions of Prelude classes
 tested-with: GHC == 7.10.2, GHC == 7.8.4, GHC == 7.6.3, GHC == 7.4.2, GHC == 7.0.4
 description:
